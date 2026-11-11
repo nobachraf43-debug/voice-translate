@@ -1,0 +1,47 @@
+
+name: Build Voice Translate APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: |
+          mkdir -p android-project
+          unzip -q VoiceTranslate_Android_Project.zip -d android-project
+          PROJECT_DIR=$(dirname "$(find android-project -name settings.gradle.kts -print -quit)")
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/apk-output"
+          find . -path '*/build/outputs/apk/debug/*.apk' -exec cp {} "$GITHUB_WORKSPACE/apk-output/" \;
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoiceTranslate-APK
+          path: apk-output/*.apk
+          
